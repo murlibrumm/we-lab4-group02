@@ -69,6 +69,9 @@ quizover.wins=gewinnt!
 quizover.info=Spielerinformationen
 quizover.wonround=Gewonnene Runden
 quizover.newgame=Neues Spiel
+quizover.twitter.uuid=UUID
+quizover.twitter.published=wurde auf Twitter veröffentlicht
+quizover.twitter.failed=konnte nicht auf twitter veröffentlicht werden
 
 info.unknown=Unbekannt
 info.correct=Richtig

@@ -71,6 +71,9 @@ quizover.wins=wins!
 quizover.info=Player Information
 quizover.wonround=Won rounds
 quizover.newgame=New game
+quizover.twitter.uuid=UUID
+quizover.twitter.published=was published on twitter
+quizover.twitter.failed=couln't be published on twitter
 
 info.unknown=unknown
 info.correct=Correct

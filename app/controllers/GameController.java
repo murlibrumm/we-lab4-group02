@@ -1,10 +1,6 @@
 package controllers;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import highscore.SOAPClientHighscore;
 import models.Category;
@@ -21,6 +17,9 @@ import play.db.jpa.Transactional;
 import play.mvc.Controller;
 import play.mvc.Result;
 import play.mvc.Security;
+import twitter.ITwitterClient;
+import twitter.TwitterClientImpl;
+import twitter.TwitterStatusMessage;
 import views.html.jeopardy;
 import views.html.question;
 import views.html.winner;
@@ -106,7 +105,7 @@ public class GameController extends Controller {
 			return ok(question.render(game));
 		} else if(game.isGameOver()) {
 			Logger.info("[" + request().username() + "] Game over... redirect");
-			return ok(winner.render(game));
+			return ok(winner.render(game, false, ""));
 		}			
 		return ok(jeopardy.render(game));
 	}
@@ -165,34 +164,54 @@ public class GameController extends Controller {
 			return redirect(routes.GameController.playGame());
 		}
 
-		// game was played and is over
+		// game was played and is over => SOAP Request & Twitter Post
+		String uuid = "";
 		try {
-			// Send SOAP-Request and get SOAP-Message
-			SOAPMessage soapMessage = SOAPClientHighscore.sendSOAPRequest(game);
-
-			// Get HighScoreResponse via xPath
-			XPath xpath = XPathFactory.newInstance().newXPath();
-			SimpleNamespaceContext ns = new SimpleNamespaceContext();
-
-			ns.bindNamespaceUri("ns2", "http://big.tuwien.ac.at/we/highscore/data");
-			ns.bindNamespaceUri("S", "http://schemas.xmlsoap.org/soap/envelope/");
-			xpath.setNamespaceContext(ns);
-
-			Node n = (Node) xpath.evaluate("//ns2:HighScoreResponse", soapMessage.getSOAPBody(), XPathConstants.NODE);
-			String uuid = n.getValue();
-
-			Logger.info("UUID from SOAP Message: " + uuid);
-
-			// Twitter
-
-
+			uuid = sendSOAPRequest();
 		} catch (Exception e) {
-			// TODO Logger
-			e.printStackTrace();
-			Logger.error("Error while sending SOAP-Request:" + e.getMessage());
+			Logger.error("Error while sending SOAP-Request: " + e.getMessage());
+		}
+
+		Boolean twitterSuccessful = false;
+		try {
+			if ( ! uuid.isEmpty() ) {
+				postUUIDToTwitter(uuid);
+				twitterSuccessful = true;
+			}
+		} catch (Exception e) {
+			Logger.error("Error while posting UUID to Twitter: " + e.getMessage());
 		}
 
 		Logger.info("[" + request().username() + "] Game over.");
-		return ok(winner.render(game));
+		return ok(winner.render(game, twitterSuccessful, uuid));
+	}
+
+	private static String sendSOAPRequest () throws Exception {
+		JeopardyGame game = cachedGame(request().username());
+
+		// Send SOAP-Request and get SOAP-Message
+		SOAPMessage soapMessage = SOAPClientHighscore.sendSOAPRequest(game);
+
+		// Get HighScoreResponse via xPath
+		XPath xpath = XPathFactory.newInstance().newXPath();
+		SimpleNamespaceContext ns = new SimpleNamespaceContext();
+
+		ns.bindNamespaceUri("ns2", "http://big.tuwien.ac.at/we/highscore/data");
+		ns.bindNamespaceUri("S", "http://schemas.xmlsoap.org/soap/envelope/");
+		xpath.setNamespaceContext(ns);
+
+		Node n = (Node) xpath.evaluate("//ns2:HighScoreResponse", soapMessage.getSOAPBody(), XPathConstants.NODE);
+		String uuid = n.getValue();
+
+		Logger.info("SAOP-Request successful, UUID from SOAP Message: " + uuid);
+		return uuid;
+	}
+
+	private static void postUUIDToTwitter (String uuid) throws Exception {
+		TwitterStatusMessage twitterStatusMessage = new TwitterStatusMessage("group02", uuid, new Date());
+
+		ITwitterClient twitterClient = new TwitterClientImpl();
+		twitterClient.publishUuid(twitterStatusMessage);
+		Logger.info("UUID sent to Twitter.");
 	}
 }
