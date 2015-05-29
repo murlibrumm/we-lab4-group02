@@ -6,10 +6,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import highscore.SOAPClientHighscore;
 import models.Category;
 import models.JeopardyDAO;
 import models.JeopardyGame;
 import models.JeopardyUser;
+import org.springframework.util.xml.SimpleNamespaceContext;
 import play.Logger;
 import play.cache.Cache;
 import play.data.DynamicForm;
@@ -22,6 +24,11 @@ import play.mvc.Security;
 import views.html.jeopardy;
 import views.html.question;
 import views.html.winner;
+
+import javax.xml.soap.*;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
 
 @Security.Authenticated(Secured.class)
 public class GameController extends Controller {
@@ -149,14 +156,43 @@ public class GameController extends Controller {
 			return ok(jeopardy.render(game));
 		}
 	}
-	
+
 	@play.db.jpa.Transactional(readOnly = true)
 	public static Result gameOver() {
 		JeopardyGame game = cachedGame(request().username());
-		if(game == null || !game.isGameOver())
+		// no game was played / game not over
+		if (game == null || !game.isGameOver()) {
 			return redirect(routes.GameController.playGame());
-		
-		Logger.info("[" + request().username() + "] Game over.");		
+		}
+
+		// game was played and is over
+		try {
+			// Send SOAP-Request and get SOAP-Message
+			SOAPMessage soapMessage = SOAPClientHighscore.sendSOAPRequest(game);
+
+			// Get HighScoreResponse via xPath
+			XPath xpath = XPathFactory.newInstance().newXPath();
+			SimpleNamespaceContext ns = new SimpleNamespaceContext();
+
+			ns.bindNamespaceUri("ns2", "http://big.tuwien.ac.at/we/highscore/data");
+			ns.bindNamespaceUri("S", "http://schemas.xmlsoap.org/soap/envelope/");
+			xpath.setNamespaceContext(ns);
+
+			Node n = (Node) xpath.evaluate("//ns2:HighScoreResponse", soapMessage.getSOAPBody(), XPathConstants.NODE);
+			String uuid = n.getValue();
+
+			Logger.info("UUID from SOAP Message: " + uuid);
+
+			// Twitter
+
+
+		} catch (Exception e) {
+			// TODO Logger
+			e.printStackTrace();
+			Logger.error("Error while sending SOAP-Request:" + e.getMessage());
+		}
+
+		Logger.info("[" + request().username() + "] Game over.");
 		return ok(winner.render(game));
 	}
 }
