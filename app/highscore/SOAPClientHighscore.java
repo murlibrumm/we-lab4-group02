@@ -25,9 +25,8 @@ public class SOAPClientHighscore {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         soapResponse.writeTo(bout);
         String soapResponseString = bout.toString("UTF-8");
-        Logger.debug("Response SOAP Message:" + soapResponseString);
-        // TODO Logger.debug funktioniert nicht?
-        soapResponse.writeTo(System.out);
+        Logger.info("Response SOAP Message:");
+        Logger.info(soapResponseString);
 
         soapConnection.close();
         return soapResponse;
@@ -86,10 +85,8 @@ public class SOAPClientHighscore {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         soapMessage.writeTo(bout);
         String soapMessageString = bout.toString("UTF-8");
-        Logger.debug("Request SOAP Message:" + soapMessageString);
-
-        // TODO Logger.debug funktioniert nicht?
-        soapMessage.writeTo(System.out);
+        Logger.info("Request SOAP Message:");
+        Logger.info(soapMessageString);
 
         return soapMessage;
     }

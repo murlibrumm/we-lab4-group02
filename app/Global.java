@@ -11,6 +11,8 @@ import play.db.jpa.JPA;
 import play.libs.F.Function0;
 import data.JSONDataInserter;
 
+import controllers.DBPediaClient;
+
 public class Global extends GlobalSettings {
 	
 	@play.db.jpa.Transactional
@@ -29,6 +31,8 @@ public class Global extends GlobalSettings {
 
 			@Override
 			public Boolean apply() throws Throwable {
+				DBPediaClient.createDBPediaQuestions();
+				Logger.info("Category from DBPedia loaded...");
 				insertJSonData();
 				return true;
 			}
