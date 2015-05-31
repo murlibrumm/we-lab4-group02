@@ -43,6 +43,7 @@ public class DBPediaClient{
     }
 
     private static void addQuestion(int value, String name, int limit, Category category) {
+        System.out.println("=====" + name);
         Random randomGenerator = new Random();
 
         Question question = new Question();
@@ -96,7 +97,7 @@ public class DBPediaClient{
 
         // zumindest eine richtige antwort
         int index = getUnusedIndex (usedIndexMovieNames, englishMovieNames.size());
-        setAnswer (englishMovieNames, germanMovieNames, question, answers, index);
+        setAnswer (englishMovieNames, germanMovieNames, question, answers, index, true);
 
         // 1 richtige + 3 bis 5 richtig / falsche Antworten.
         int questionNumber = 3 + randomGenerator.nextInt(3);
@@ -104,10 +105,10 @@ public class DBPediaClient{
             int rightAnswer = randomGenerator.nextInt(2);
             if (rightAnswer == 0) {
                 index = getUnusedIndex(usedIndexWrongMovieNames, englishWrongMovieNames.size());
-                setAnswer(englishWrongMovieNames, germanWrongMovieNames, question, answers, index);
+                setAnswer(englishWrongMovieNames, germanWrongMovieNames, question, answers, index, false);
             } else {
                 index = getUnusedIndex(usedIndexMovieNames, englishMovieNames.size());
-                setAnswer(englishMovieNames, germanMovieNames, question, answers, index);
+                setAnswer(englishMovieNames, germanMovieNames, question, answers, index, true);
             }
         }
 
@@ -118,18 +119,24 @@ public class DBPediaClient{
     }
 
     private static void setAnswer (List<String> englishMovieNames, List<String> germanMovieNames,
-                                   Question question, List<Answer> answers, int index) {
+                                   Question question, List<Answer> answers, int index, boolean trueAnswer) {
         if (index == -1) {
             return;
         }
         Answer answer = new Answer();
 
+        System.out.println(englishMovieNames.get(index) + " ----- " + trueAnswer);
+
         answer.setText("Who directed the movie " + englishMovieNames.get(index) + "?", "en");
         answer.setText("Wer war Regisseur bei "  + germanMovieNames.get(index)  + "?", "de");
-        answer.setCorrectAnswer(false);
+        answer.setCorrectAnswer(trueAnswer);
 
         JeopardyDAO.INSTANCE.persist(answer);
-        question.addWrongAnswer(answer);
+        if (trueAnswer) {
+            question.addRightAnswer(answer);
+        } else {
+            question.addWrongAnswer(answer);
+        }
         answers.add(answer);
     }
 

@@ -208,7 +208,9 @@ public class GameController extends Controller {
 	}
 
 	private static void postUUIDToTwitter (String uuid) throws Exception {
-		TwitterStatusMessage twitterStatusMessage = new TwitterStatusMessage("group02", uuid, new Date());
+		JeopardyGame game = cachedGame(request().username());
+		TwitterStatusMessage twitterStatusMessage = new TwitterStatusMessage(
+				game.getHuman().getUserName(), uuid, new Date());
 
 		ITwitterClient twitterClient = new TwitterClientImpl();
 		twitterClient.publishUuid(twitterStatusMessage);
